@@ -70,7 +70,7 @@ def fetch_cargo_toml_remote(url):
         raise RuntimeError(f"Ошибка загрузки Cargo.toml: {str(e)}")
 
 def fetch_cargo_toml_local(path):
-    """Читает Cargo.toml из локального файла"""
+    # for local
     try:
         if not os.path.exists(path):
             raise FileNotFoundError(f"Файл не найден: {path}")
@@ -80,7 +80,7 @@ def fetch_cargo_toml_local(path):
         raise RuntimeError(f"Ошибка чтения локального файла: {str(e)}")
 
 def parse_dependencies(content):
-    """Извлекает прямые зависимости из содержимого Cargo.toml"""
+    # dependencies from toml
     dependencies = []
     in_dependencies_section = False
     
