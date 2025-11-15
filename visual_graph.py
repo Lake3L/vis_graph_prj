@@ -1,6 +1,8 @@
 import configparser
 import sys
 import os
+import urllib.request
+import ssl
 
 
 def validate_config(config):
@@ -58,6 +60,51 @@ def validate_config(config):
         print(f"Ошибка в конфигурации: {str(e)}", file=sys.stderr)
         sys.exit(1)
 
+def fetch_cargo_toml_remote(url):
+    """Загружает Cargo.toml из удаленного репозитория"""
+    try:
+        context = ssl._create_unverified_context()
+        with urllib.request.urlopen(url, context=context, timeout=10) as response:
+            return response.read().decode('utf-8')
+    except Exception as e:
+        raise RuntimeError(f"Ошибка загрузки Cargo.toml: {str(e)}")
+
+def fetch_cargo_toml_local(path):
+    """Читает Cargo.toml из локального файла"""
+    try:
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Файл не найден: {path}")
+        with open(path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception as e:
+        raise RuntimeError(f"Ошибка чтения локального файла: {str(e)}")
+
+def parse_dependencies(content):
+    """Извлекает прямые зависимости из содержимого Cargo.toml"""
+    dependencies = []
+    in_dependencies_section = False
+    
+    for line in content.splitlines():
+        line = line.strip()
+        
+        # Определение секции зависимостей
+        if line.startswith('['):
+            in_dependencies_section = line == '[dependencies]'
+            continue
+        
+        # Пропуск комментариев и пустых строк
+        if not line or line.startswith('#') or not in_dependencies_section:
+            continue
+        
+        # Извлечение имени пакета (до первого '=')
+        if '=' in line:
+            dep_name = line.split('=', 1)[0].strip()
+            # Проверка на вложенные секции (например, [dependencies.subpkg])
+            if '.' not in dep_name and not dep_name.startswith('['):
+                dependencies.append(dep_name)
+    
+    return dependencies
+
 def main():
     config = configparser.ConfigParser()
     
@@ -78,6 +125,29 @@ def main():
     print("Настройки приложения:")
     for key, value in params.items():
         print(f"{key}: {value}")
+
+    # Этап 2: Сбор данных о зависимостях
+    try:
+        # Определение источника Cargo.toml
+        if params['mode'] == 'remote':
+            cargo_content = fetch_cargo_toml_remote(params['repository'])
+        else:  # local
+            cargo_content = fetch_cargo_toml_local(params['repository'])
+        
+        # Извлечение зависимостей
+        dependencies = parse_dependencies(cargo_content)
+        
+        # Вывод результатов (требование этапа 2)
+        print(f"\nПрямые зависимости пакета {params['package_name']}:")
+        if dependencies:
+            for dep in dependencies:
+                print(f"- {dep}")
+        else:
+            print("Зависимости не найдены")
+    
+    except Exception as e:
+        print(f"Ошибка получения зависимостей: {str(e)}", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
