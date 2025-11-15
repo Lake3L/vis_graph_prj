@@ -2,9 +2,8 @@ import configparser
 import sys
 import os
 
+
 def validate_config(config):
-    """Проверяет корректность параметров конфигурации"""
-    # Обязательные параметры и их типы
     REQUIRED_PARAMS = {
         'package_name': str,
         'repository': str,
@@ -14,7 +13,7 @@ def validate_config(config):
         'filter_substring': str
     }
     
-    # Допустимые значения для режима
+    #Допустимые значения для mode 
     VALID_MODES = ['local', 'remote']
     
     try:
@@ -45,11 +44,11 @@ def validate_config(config):
                     raise ValueError(f"Параметр {param} не может быть пустым")
                 validated_params[param] = value
         
-        # Специальная валидация для режима
+        # Валидация для mode
         if validated_params['mode'].lower() not in VALID_MODES:
             raise ValueError(f"Недопустимое значение для mode. Допустимые значения: {', '.join(VALID_MODES)}")
         
-        # Валидация имени файла (простая проверка расширения)
+        # Валидация для имени файла
         if not validated_params['output_file'].lower().endswith(('.png', '.jpg', '.jpeg', '.svg')):
             raise ValueError("output_file должен иметь расширение изображения (.png, .jpg, .jpeg, .svg)")
         
@@ -75,7 +74,7 @@ def main():
     # Валидация параметров
     params = validate_config(config)
     
-    # Вывод параметров в формате ключ-значение
+    # Вывод
     print("Настройки приложения:")
     for key, value in params.items():
         print(f"{key}: {value}")
